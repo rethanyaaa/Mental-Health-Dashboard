@@ -56,10 +56,10 @@ const App = () => {
   return (
     <>
       {showLoader && loaderComponent}
-      <div className="mx-4 sm:mx-[10%] pt-20">
+      <div  >
         <ToastContainer
           theme="light"
-          className="scale-95 mt-2 sm:scale-100 sm:mt-16"
+          className="scale-95  sm:scale-100 sm:mt-16"
         />
         <Navbar />
         <ScrollToTop /> {/* Add this component */}

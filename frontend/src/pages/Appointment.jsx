@@ -1,18 +1,16 @@
-import React, { useContext, useEffect, useState } from 'react'
+ import React, { useContext, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppContext } from '../context/AppContext'
 import { assets } from '../assets/assets'
-import { CalendarArrowDown, Check } from 'lucide-react'
+import { CalendarArrowDown, Check, ChevronLeft, ChevronRight } from 'lucide-react'
 import RelatedDoctor from '../components/RelatedDoctor'
 import { toast } from 'react-toastify'
 import axios from 'axios'
 
 const Appointment = () => {
-  const { docId } = useParams() // docId from the URL
+  const { docId } = useParams()
   const { doctors, currencySymbol, backendUrl, token, getDoctorsData } =
     useContext(AppContext)
-
-  const daysOfWeek = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 
   const navigate = useNavigate()
 
@@ -21,71 +19,92 @@ const Appointment = () => {
   const [slotIndex, setSlotIndex] = useState(0)
   const [slotTime, setSlotTime] = useState('')
   const [loading, setLoading] = useState(false)
+  
+  // Calendar state
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [showCalendar, setShowCalendar] = useState(false)
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ]
 
   const fetchDocInfo = async () => {
     const docInfo = doctors.find(doc => doc._id === docId)
     setDocInfo(docInfo)
   }
 
-  const getAvailableSlots = async () => {
+  const getAvailableSlots = async (date = new Date()) => {
     if (!docInfo) return
 
-    let today = new Date()
-    let updatedSlots = [] // Store all slots in an array
+    let updatedSlots = []
+    let currentDate = new Date(date)
+    
+    // Reset time to beginning of day
+    currentDate.setHours(0, 0, 0, 0)
 
     for (let i = 0; i < 7; i++) {
-      let currentDate = new Date(today)
-      currentDate.setDate(today.getDate() + i)
+      let dayDate = new Date(currentDate)
+      dayDate.setDate(currentDate.getDate() + i)
 
-      let endTime = new Date()
-      endTime.setDate(today.getDate() + i)
+      let endTime = new Date(dayDate)
       endTime.setHours(21, 0, 0, 0)
 
-      // Setting hours
-      if (today.getDate() === currentDate.getDate()) {
-        currentDate.setHours(
-          currentDate.getHours() > 10 ? currentDate.getHours() + 1 : 10
+      // Set starting time (10:00 AM or current time if today)
+      let startTime = new Date(dayDate)
+      if (i === 0 && isToday(dayDate)) {
+        const now = new Date()
+        startTime.setHours(
+          now.getHours() > 10 ? now.getHours() + 1 : 10
         )
-        currentDate.setMinutes(currentDate.getMinutes() > 30 ? 30 : 0)
+        startTime.setMinutes(now.getMinutes() > 30 ? 30 : 0)
       } else {
-        currentDate.setHours(10)
-        currentDate.setMinutes(0)
+        startTime.setHours(10, 0, 0, 0)
       }
 
       let timeSlots = []
 
-      while (currentDate < endTime) {
-        let formattedTime = currentDate.toLocaleTimeString([], {
+      while (startTime < endTime) {
+        let formattedTime = startTime.toLocaleTimeString([], {
           hour: '2-digit',
           minute: '2-digit'
         })
 
-        let day = currentDate.getDate().toString().padStart(2, '0')
-        let month = (currentDate.getMonth() + 1).toString().padStart(2, '0')
-        let year = currentDate.getFullYear()
+        let day = startTime.getDate().toString().padStart(2, '0')
+        let month = (startTime.getMonth() + 1).toString().padStart(2, '0')
+        let year = startTime.getFullYear()
 
         const slotDate = day + '/' + month + '/' + year
         const slotTime = formattedTime
 
-        // Ensure docInfo.slots_booked exists and filter correctly
         const isSlotBooked =
           docInfo?.slots_booked?.[slotDate]?.includes(slotTime) ?? false
 
         if (!isSlotBooked) {
           timeSlots.push({
-            datetime: new Date(currentDate),
+            datetime: new Date(startTime),
             time: slotTime
           })
         }
 
-        // Increment by 30 minutes
-        currentDate.setMinutes(currentDate.getMinutes() + 30)
+        startTime.setMinutes(startTime.getMinutes() + 30)
       }
 
       updatedSlots.push(timeSlots)
     }
 
-    setDocSlots(updatedSlots) // Set all slots at once after processing
+    setDocSlots(updatedSlots)
+  }
+
+  const isToday = (date) => {
+    const today = new Date()
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    )
   }
 
   const bookAppointment = async () => {
@@ -120,17 +139,101 @@ const Appointment = () => {
         toast.error(data.message)
       }
     } catch (error) {
-      if (
-        error.response &&
-        error.response.data &&
-        error.response.data.message
-      ) {
+      if (error.response?.data?.message) {
         toast.error(error.response.data.message)
       } else {
         toast.error('An unexpected error occurred. Please try again.')
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Calendar functions
+  const renderCalendarDays = () => {
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay()
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
+    const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate()
+    
+    const today = new Date()
+    const days = []
+    
+    // Previous month days
+    for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+      days.push(
+        <div 
+          key={`prev-${i}`} 
+          className="h-10 flex items-center justify-center text-gray-400"
+        >
+          {daysInPrevMonth - i}
+        </div>
+      )
+    }
+    
+    // Current month days
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dayDate = new Date(currentYear, currentMonth, i)
+      const isDisabled = dayDate < new Date(today.getFullYear(), today.getMonth(), today.getDate())
+      
+      days.push(
+        <div
+          key={`current-${i}`}
+          onClick={() => !isDisabled && handleDateSelect(dayDate)}
+          className={`h-10 flex items-center justify-center rounded-full cursor-pointer transition-colors
+            ${
+              isDisabled 
+                ? 'text-gray-400 cursor-not-allowed'
+                : selectedDate.getDate() === i && 
+                  selectedDate.getMonth() === currentMonth && 
+                  selectedDate.getFullYear() === currentYear
+                ? 'bg-[#7c3aed] text-white'
+                : 'hover:bg-[#7c3aed]/10'
+            }`}
+        >
+          {i}
+        </div>
+      )
+    }
+    
+    // Next month days to fill the grid
+    const totalDays = days.length
+    const remainingCells = 42 - totalDays // 6 rows x 7 columns
+    
+    for (let i = 1; i <= remainingCells; i++) {
+      days.push(
+        <div 
+          key={`next-${i}`} 
+          className="h-10 flex items-center justify-center text-gray-400"
+        >
+          {i}
+        </div>
+      )
+    }
+    
+    return days
+  }
+
+  const handleDateSelect = (date) => {
+    setSelectedDate(date)
+    setShowCalendar(false)
+    getAvailableSlots(date)
+  }
+
+  const changeMonth = (increment) => {
+    if (increment === 1) {
+      if (currentMonth === 11) {
+        setCurrentMonth(0)
+        setCurrentYear(currentYear + 1)
+      } else {
+        setCurrentMonth(currentMonth + 1)
+      }
+    } else {
+      if (currentMonth === 0) {
+        setCurrentMonth(11)
+        setCurrentYear(currentYear - 1)
+      } else {
+        setCurrentMonth(currentMonth - 1)
+      }
     }
   }
 
@@ -142,140 +245,192 @@ const Appointment = () => {
     getAvailableSlots()
   }, [docInfo])
 
-  useEffect(() => {
-    console.log(docSlots)
-  }, [docSlots])
-
   return (
     docInfo && (
-      <div className='min-h-screen'>
-        {/* ----------- Doctor details ---------- */}
-        <div className='flex flex-col sm:flex-row gap-4'>
-          <div>
-            <img
-              className='bg-primary w-full sm:max-w-72 rounded-lg'
-              src={docInfo.image}
-              alt='doctor profile photo'
-            />
-          </div>
-
-          <div className='flex-1 border border-gray-400 rounded-lg p-4 md:p-7 bg-white mx-2 sm:mx-0 mt-[-80px] sm:mt-0'>
-            {/* ------ Doc info: name, degree, experience */}
-            <p className='flex items-center gap-2 text-2xl font-medium text-gray-900'>
-              {docInfo.name}
+      <div className='min-h-screen py-8 px-4' style={{ 
+        background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)'
+      }}>
+        {/* Doctor Card */}
+        <div className='max-w-6xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden mb-8'>
+          <div className='md:flex'>
+            <div className='md:w-1/3 p-6 flex justify-center'>
               <img
-                className='w-5'
-                src={assets.verified_icon}
-                alt='verified icon'
+                className='w-64 h-64 object-cover rounded-lg border-4 border-[#7c3aed]/20'
+                src={docInfo.image}
+                alt='doctor profile'
               />
-            </p>
-            <div className='flex items-center gap-2 text-sm mt-1 text-gray-600 '>
-              <p>
-                {docInfo.degree} - {docInfo.speciality}
-              </p>
-              <button className='py-0.5 px-2.5 border text-xs rounded-md cursor-default'>
-                {docInfo.experience}
-              </button>
             </div>
-
-            {/* Doctor About */}
-            <div>
-              <p className='flex items-center gap-1.5 text-sm sm:text-base font-medium text-gray-900 mt-3 '>
-                About
-                <img className='w-3' src={assets.info_icon} alt='' />
-              </p>
-              <p className='text-sm sm:text-base text-gray-500 max-w-[750px] mt-1'>
-                {docInfo.about}
-              </p>
+            
+            <div className='md:w-2/3 p-6'>
+              <div className='flex items-center gap-3 mb-4'>
+                <h1 className='text-2xl font-bold text-[#7c3aed]'>{docInfo.name}</h1>
+                <img className='w-6' src={assets.verified_icon} alt='verified' />
+              </div>
+              
+              <div className='flex items-center gap-2 mb-6'>
+                <span className='bg-[#7c3aed]/10 text-[#7c3aed] px-3 py-1 rounded-full text-sm'>
+                  {docInfo.speciality}
+                </span>
+                <span className='bg-[#fef08a]/30 text-[#7c3aed] px-3 py-1 rounded-full text-sm'>
+                  {docInfo.experience} experience
+                </span>
+              </div>
+              
+              <div className='mb-6'>
+                <h3 className='text-lg font-semibold text-gray-800 mb-2'>About</h3>
+                <p className='text-gray-600'>{docInfo.about}</p>
+              </div>
+              
+              <div className='flex justify-between items-center'>
+                <div>
+                  <p className='text-gray-500'>Appointment Fee</p>
+                  <p className='text-2xl font-bold text-[#7c3aed]'>
+                    {currencySymbol}
+                    {docInfo.fees}
+                  </p>
+                </div>
+              </div>
             </div>
-            <p className='text-gray-800 font-medium mt-7 sm:mt-14 sm:translate-y-2'>
-              Appointment Fees: &nbsp;
-              <span>
-                {currencySymbol}
-                {docInfo.fees}
-              </span>
-            </p>
           </div>
         </div>
 
-        {/* --------- Booking Slots ----------- */}
-        <div className='sm:ml-72 sm:pl-4 mt-4 font-medium text-gray-800'>
-          <p className='mt-8 flex items-center justify-center md:justify-start gap-2 py-1'>
-            <span>Book from available slots</span>
-            <CalendarArrowDown size={20} className='-translate-y-[1.2px]' />
-          </p>
-          <hr className='mt-2' />
-          {/* days and data */}
-          <div className='flex flex-col md:flex-row items-start md:items-center justify-start gap-2 md:gap-4 mt-4'>
-            <p className='text-sm text-gray-500 font-normal md:pr-4'>
-              Select Date
-            </p>
-            <div className='flex flex-1 gap-3 items-center w-full overflow-x-scroll'>
-              {docSlots.length &&
-                docSlots.map((item, index) => (
-                  <div
-                    onClick={() => setSlotIndex(index)}
-                    className={`flex items-center flex-shrink-0 gap-2 text-center py-2.5 px-5 min-w-16 rounded-md cursor-pointer transition-all duration-150 ease-in ${
-                      slotIndex === index
-                        ? 'border border-primary bg-primary text-white'
-                        : 'border border-gray-200'
-                    } hover:border-primary`}
-                    key={index}
-                  >
-                    <p>{item[0] && daysOfWeek[item[0].datetime.getDay()]}</p>
-                    <p>{item[0] && item[0].datetime.getDate()}</p>
-                  </div>
-                ))}
+        {/* Booking Section */}
+        <div className='max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-6'>
+          <h2 className='text-xl font-bold text-[#7c3aed] mb-6 flex items-center gap-2'>
+            <CalendarArrowDown className="text-[#fef08a]" />
+            Book Your Appointment
+          </h2>
+          
+          {/* Date Selection */}
+      {/* Date Selection */}
+<div className='mb-8 relative'>
+  <h3 className='text-lg font-medium text-gray-700 mb-4'>Select Date</h3>
+  
+  <div className='flex gap-3 overflow-x-auto pb-2'>
+    {/* Calendar icon button as first item */}
+    <button
+      onClick={() => setShowCalendar(!showCalendar)}
+      className={`flex flex-col items-center justify-center py-3 px-5 min-w-24 rounded-lg transition-all ${
+        showCalendar
+          ? 'bg-[#7c3aed] text-white'
+          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+      }`}
+    >
+      <CalendarArrowDown size={24} className="mb-1" />
+      <span className='text-xs'>Calendar</span>
+    </button>
+    
+    {/* Date pills */}
+    {docSlots.map((item, index) => (
+      <button
+        key={index}
+        onClick={() => {
+          setSlotIndex(index)
+          setShowCalendar(false)
+        }}
+        className={`flex flex-col items-center py-3 px-5 min-w-24 rounded-lg transition-all ${
+          slotIndex === index
+            ? 'bg-[#7c3aed] text-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        <span className='font-medium'>
+          {item[0]?.datetime.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
+        </span>
+        <span className='text-lg'>{item[0]?.datetime.getDate()}</span>
+      </button>
+    ))}
+  </div>
+
+  {/* Calendar Popup */}
+  {showCalendar && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+        <div className='flex justify-between items-center mb-4'>
+          <button 
+            onClick={() => changeMonth(-1)}
+            className='p-2 rounded-full hover:bg-gray-100'
+          >
+            <ChevronLeft className='text-[#7c3aed]' />
+          </button>
+          <h4 className='font-semibold text-gray-800 text-lg'>
+            {months[currentMonth]} {currentYear}
+          </h4>
+          <button 
+            onClick={() => changeMonth(1)}
+            className='p-2 rounded-full hover:bg-gray-100'
+          >
+            <ChevronRight className='text-[#7c3aed]' />
+          </button>
+        </div>
+        
+        <div className='grid grid-cols-7 gap-1 mb-2'>
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+            <div key={day} className='text-center text-sm font-medium text-gray-500'>
+              {day}
+            </div>
+          ))}
+        </div>
+        
+        <div className='grid grid-cols-7 gap-1'>
+          {renderCalendarDays()}
+        </div>
+
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={() => setShowCalendar(false)}
+            className="px-4 py-2 text-[#7c3aed] hover:bg-[#7c3aed]/10 rounded-lg transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+</div>
+          
+          {/* Time Selection */}
+          <div className='mb-8'>
+            <h3 className='text-lg font-medium text-gray-700 mb-4'>Select Time</h3>
+            <div className='flex flex-wrap gap-3'>
+              {docSlots[slotIndex]?.map((item, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSlotTime(item.time)}
+                  className={`py-2 px-4 rounded-lg transition-all ${
+                    item.time === slotTime
+                      ? 'bg-[#7c3aed] text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {item.time.toLowerCase()}
+                </button>
+              ))}
             </div>
           </div>
-          <hr className='mt-4' />
-          {/* timings */}
-          <div className='flex flex-col md:flex-row items-start md:items-center justify-start gap-2 md:gap-4 mt-4'>
-            <p className='text-sm text-gray-500 font-normal md:pr-4'>
-              Select Timing
-            </p>
-            <div className='flex flex-1 items-center gap-3 w-full overflow-x-scroll'>
-              {docSlots.length &&
-                docSlots[slotIndex].map((item, index) => (
-                  <p
-                    onClick={() => setSlotTime(item.time)}
-                    className={`text-sm tracking-wide font-normal text-gray-700 flex-shrink-0 px-4 py-2.5 rounded-md cursor-pointer transition-all duration-150 ease-in ${
-                      item.time === slotTime
-                        ? 'border border-primary bg-primary text-white'
-                        : 'border border-gray-200'
-                    } hover:border-primary`}
-                    key={index}
-                  >
-                    {item.time.toLowerCase()}
-                  </p>
-                ))}
-            </div>
-          </div>
-          <hr className='mt-4' />
-          {/* confirm booking button */}
+          
+          {/* Confirm Button */}
           <button
             onClick={bookAppointment}
-            className={`flex items-center justify-center gap-2 mt-5 rounded-lg px-5 py-3.5 text-[14px] font-normal tracking-wide ${
-              slotTime
-                ? 'bg-primary text-white cursor-pointer active:scale-[96%] transition-all duration-100 ease-in'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={!slotTime || loading}
+            className={`w-full py-3 rounded-lg text-white font-medium transition-all ${
+              !slotTime || loading
+                ? 'bg-[#a78bfa] cursor-not-allowed'
+                : 'bg-[#7c3aed] hover:bg-[#5b21b6]'
+            }`}
           >
-            <span className='select-none'>
-              {loading ? 'In Process...' : 'Confirm Booking'}
-            </span>
             {loading ? (
-              <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+              <span className='flex items-center justify-center gap-2'>
+                <div className='w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+                Processing...
+              </span>
             ) : (
-              <Check size={18} />
+              'Confirm Appointment'
             )}
           </button>
         </div>
 
-        <hr className='mt-10 md:ml-10 select-none' />
-
-        {/* Listing related doctors */}
+        {/* Related Doctors */}
         <RelatedDoctor docId={docId} speciality={docInfo.speciality} />
       </div>
     )

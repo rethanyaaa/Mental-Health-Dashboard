@@ -1,8 +1,8 @@
-import React, { useContext, useEffect, useState } from 'react'
+ import React, { useContext, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppContext } from '../context/AppContext'
 import { ChevronDown } from 'lucide-react'
-import { motion } from 'motion/react'
+import { motion } from "framer-motion";
 
 const Doctors = () => {
   const { speciality } = useParams()
@@ -44,129 +44,133 @@ const Doctors = () => {
   }
 
   return (
-    <div className='min-h-screen'>
-      <p className='text-gray-500'>
-        Find and book appointments with doctors based on their specialities.
+    <div className='min-h-screen px-6 md:px-12 py-8' style={{ 
+      background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)'
+    }}>
+      <h1 className='text-3xl font-bold text-[#7c3aed] mb-2'>
+        {speciality ? `${speciality} Specialists` : 'Our Mental Health Professionals'}
+      </h1>
+      <p className='text-gray-600 mb-6'>
+        Find and book appointments with qualified mental health professionals.
       </p>
-      <div className='flex flex-col sm:flex-row items-start gap-3 sm:gap-5 mt-5'>
-        <button
-          className={`py-2 px-3 flex items-center gap-1 border rounded-md text-sm transition-all duration-300 ease-in-out sm:hidden ${
-            showFilter ? '' : 'bg-primary border-primary text-white'
-          }`}
-          onClick={() => setShowFilter(prev => !prev)}
-        >
-          Filter by speciality
-          <ChevronDown
-            size={18}
-            className={`transition-transform duration-500 ease-in-out ${
-              showFilter ? '-rotate-180' : 'rotate-0'
+      
+      <div className='flex flex-col lg:flex-row gap-6'>
+        {/* Filter Sidebar */}
+        <div className='lg:w-1/4'>
+          <button
+            className={`py-2 px-4 flex items-center gap-2 rounded-lg text-sm font-medium transition-all duration-300 sm:hidden ${
+              showFilter 
+                ? 'bg-white text-[#7c3aed] border border-[#7c3aed]' 
+                : 'bg-[#7c3aed] text-white'
             }`}
-          />
-        </button>
-        <div
-          className={`flex-col bg-gray-100 p-4 rounded-lg sm:bg-transparent sm:p-0 gap-2 text-sm text-gray-800 ${
-            showFilter
-              ? 'flex motion-translate-x-in-[0%] motion-translate-y-in-[-5%] motion-duration-[0.38s] motion-ease-spring-smooth'
-              : 'hidden sm:flex'
-          }`}
-        >
-          <p
-            onClick={() => handleSpecialityClick('General physician')}
-            className={`w-[230px] md:w-auto pl-3 py-2.5 pr-16 border border-gray-300 hover:border-primary rounded-md md:rounded-lg transition-all duration-100 ease-linear cursor-pointer select-none ${
-              speciality === 'General physician'
-                ? 'bg-primary border-primary text-white'
-                : 'bg-white'
-            }`}
+            onClick={() => setShowFilter(prev => !prev)}
           >
-            General physician
-          </p>
-          <p
-            onClick={() => handleSpecialityClick('Gynecologist')}
-            className={`w-[230px] md:w-auto pl-3 py-2.5 pr-16 border border-gray-300 hover:border-primary rounded-md md:rounded-lg transition-all duration-100 ease-linear cursor-pointer select-none ${
-              speciality === 'Gynecologist'
-                ? 'bg-primary border-primary text-white'
-                : 'bg-white'
-            }`}
-          >
-            Gynecologist
-          </p>
-          <p
-            onClick={() => handleSpecialityClick('Dermatologist')}
-            className={`w-[230px] md:w-auto pl-3 py-2.5 pr-16 border border-gray-300 hover:border-primary rounded-md md:rounded-lg transition-all duration-100 ease-linear cursor-pointer select-none ${
-              speciality === 'Dermatologist'
-                ? 'bg-primary border-primary text-white'
-                : 'bg-white'
-            }`}
-          >
-            Dermatologist
-          </p>
-          <p
-            onClick={() => handleSpecialityClick('Pediatricians')}
-            className={`w-[230px] md:w-auto pl-3 py-2.5 pr-16 border border-gray-300 hover:border-primary rounded-md md:rounded-lg transition-all duration-100 ease-linear cursor-pointer select-none ${
-              speciality === 'Pediatricians'
-                ? 'bg-primary border-primary text-white'
-                : 'bg-white'
-            }`}
-          >
-            Pediatricians
-          </p>
-          <p
-            onClick={() => handleSpecialityClick('Neurologist')}
-            className={`w-[230px] md:w-auto pl-3 py-2.5 pr-16 border border-gray-300 hover:border-primary rounded-md md:rounded-lg transition-all duration-100 ease-linear cursor-pointer select-none ${
-              speciality === 'Neurologist'
-                ? 'bg-primary border-primary text-white'
-                : 'bg-white'
-            }`}
-          >
-            Neurologist
-          </p>
-          <p
-            onClick={() => handleSpecialityClick('Gastroenterologist')}
-            className={`w-[230px] md:w-auto pl-3 py-2.5 pr-16 border border-gray-300 hover:border-primary rounded-md md:rounded-lg transition-all duration-100 ease-linear cursor-pointer select-none ${
-              speciality === 'Gastroenterologist'
-                ? 'bg-primary border-primary text-white'
-                : 'bg-white'
-            }`}
-          >
-            Gastroenterologist
-          </p>
-        </div>
-        <div className='w-full grid grid-cols-auto lg:grid-cols-4 gap-4'>
-          {filterDoc.map((item, index) => (
-            <motion.div
-              key={`${animationKey}-${index}`}
-              onClick={() => {
-                navigate(`/appointment/${item._id}`)
-                scrollToTop()
-              }}
-              className='border border-blue-200 rounded-lg sm:rounded-xl overflow-hidden cursor-pointer hover:scale-[102%] transition-all duration-200 ease-linear group'
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.1, delay: index * 0.1 }}
-            >
-              <img
-                className='bg-blue-50 group-hover:bg-blue-100 transition-colors duration-200 ease-in'
-                src={item.image}
-                alt='doctor profile pic'
-              />
-              <div className='p-4 '>
-                <div
-                  className={`flex items-center gap-2 text-sm text-center ${
-                    item.available ? 'text-green-500' : 'text-red-500'
-                  }`}
-                >
-                  <p
-                    className={`size-2 ${
-                      item.available ? 'bg-green-500' : 'bg-red-500'
-                    } rounded-full`}
-                  ></p>
-                  {item.available ? <p>Available</p> : <p>Not Available</p>}
-                </div>
-                <p className='text-gray-900 text-lg font-medium'>{item.name}</p>
-                <p className='text-gray-600 text-sm'>{item.speciality}</p>
+            {showFilter ? 'Hide Filters' : 'Show Filters'}
+            <ChevronDown
+              size={18}
+              className={`transition-transform duration-300 ${
+                showFilter ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+          
+          <div className={`${showFilter ? 'block' : 'hidden'} lg:block`}>
+            <div className='bg-white p-4 rounded-xl shadow-sm border border-gray-200'>
+              <h3 className='text-lg font-semibold text-[#7c3aed] mb-4'>
+                Specializations
+              </h3>
+              <div className='space-y-2'>
+                {[
+                  'Psychiatrists',
+                  'Clinical Psychologists',
+                  'Therapists',
+                  'Child and Adolescent Psychiatrists',
+                  'Geriatric Psychiatrists',
+                  'Addiction Psychiatrists'
+                ].map((spec, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSpecialityClick(spec)}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
+                      speciality === spec
+                        ? 'bg-[#7c3aed] text-white'
+                        : 'bg-gray-50 hover:bg-[#f5f3ff] text-gray-700'
+                    }`}
+                  >
+                    {spec}
+                  </button>
+                ))}
               </div>
-            </motion.div>
-          ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Doctors Grid */}
+        <div className='lg:w-3/4'>
+          {filterDoc.length === 0 ? (
+            <div className='bg-white rounded-xl p-8 text-center'>
+              <h3 className='text-xl font-medium text-gray-700 mb-2'>
+                No doctors found
+              </h3>
+              <p className='text-gray-500 mb-4'>
+                {speciality 
+                  ? `We currently don't have any ${speciality.toLowerCase()} specialists available.` 
+                  : 'No doctors are currently available.'}
+              </p>
+              <button
+                onClick={() => navigate('/doctors')}
+                className='px-6 py-2 bg-[#7c3aed] text-white rounded-lg hover:bg-[#5b21b6] transition-colors'
+              >
+                View All Doctors
+              </button>
+            </div>
+          ) : (
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
+              {filterDoc.map((item, index) => (
+                <motion.div
+                  key={`${animationKey}-${index}`}
+                  onClick={() => {
+                    navigate(`/appointment/${item._id}`)
+                    scrollToTop()
+                  }}
+                  className='bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer group'
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                >
+                  <div className='relative'>
+                    <img
+                      className='w-full h-48 object-cover group-hover:brightness-90 transition-all'
+                      src={item.image}
+                      alt={item.name}
+                    />
+                    <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${
+                      item.available 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {item.available ? 'Available' : 'Not Available'}
+                    </div>
+                  </div>
+                  
+                  <div className='p-5'>
+                    <h3 className='text-xl font-bold text-[#7c3aed] mb-1'>
+                      {item.name}
+                    </h3>
+                    <p className='text-gray-600 mb-3'>{item.speciality}</p>
+                    <div className='flex justify-between items-center'>
+                      <span className='text-sm text-gray-500'>
+                        {item.experience} experience
+                      </span>
+                      <span className='font-bold text-[#7c3aed]'>
+                        ${item.fees}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -81,65 +81,71 @@ const Navbar = () => {
 
   return (
     <div
-      className={`fixed top-0 left-5 right-5 z-50 flex items-center justify-between text-sm py-4 border-b border-b-gray-300 bg-white transition-shadow duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between text-sm py-4 bg-[#a78bfa] transition-shadow duration-300 ${
         scrolled ? "shadow-md" : "shadow-none"
       }`}
+      style={{
+        background: "linear-gradient(135deg, #a78bfa 0%, #c4b5fd 100%)",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
+      }}
     >
-      <img
-        onClick={() => navigate("/")}
-        className="w-36 md:w-44 cursor-pointer"
-        draggable="false"
-        src={assets.logo}
-        alt=""
-      />
+      {/* Logo */}
+       <span className="ml-2 text-xl font-bold text-purple-800 hidden md:block">
+          LOGO
+        </span>
 
-      <ul className="hidden md:flex items-center gap-5 font-medium">
+      {/* Navigation Links */}
+      <ul className="hidden md:flex items-center gap-5 font-medium text-white">
         <NavLink to={"/"}>
-          <li className="py-1">HOME</li>
-          <hr className="border-none outline-none h-0.5 bg-primary w-full rounded-full m-auto hidden motion-preset-pop motion-duration-500" />
+          <li className="py-1 hover:text-[#fef08a] transition-colors">HOME</li>
         </NavLink>
         <NavLink to={"/doctors"}>
-          <li className="py-1">ALL DOCTORS</li>
-          <hr className="border-none outline-none h-0.5 bg-primary w-full rounded-full m-auto hidden motion-preset-pop motion-duration-500" />
+          <li className="py-1 hover:text-[#fef08a] transition-colors">
+            ALL DOCTORS
+          </li>
         </NavLink>
         {token && (
           <>
             <NavLink to={"/assessments"}>
-              <li className="py-1">SELF-ASSESSMENT</li>
-              <hr className="border-none outline-none h-0.5 bg-primary w-full rounded-full m-auto hidden motion-preset-pop motion-duration-500" />
+              <li className="py-1 hover:text-[#fef08a] transition-colors">
+                SELF-ASSESSMENT
+              </li>
             </NavLink>
             <NavLink to={"/my-assessments"}>
-              <li className="py-1">MY RESULTS</li>
-              <hr className="border-none outline-none h-0.5 bg-primary w-full rounded-full m-auto hidden motion-preset-pop motion-duration-500" />
+              <li className="py-1 hover:text-[#fef08a] transition-colors">
+                MY RESULTS
+              </li>
             </NavLink>
           </>
         )}
         <NavLink to={"/about"}>
-          <li className="py-1">ABOUT</li>
-          <hr className="border-none outline-none h-0.5 bg-primary w-full rounded-full m-auto hidden motion-preset-pop motion-duration-500" />
+          <li className="py-1 hover:text-[#fef08a] transition-colors">ABOUT</li>
         </NavLink>
         <NavLink to={"/contact"}>
-          <li className="py-1">CONTACT</li>
-          <hr className="border-none outline-none h-0.5 bg-primary w-full rounded-full m-auto hidden motion-preset-pop motion-duration-500" />
+          <li className="py-1 hover:text-[#fef08a] transition-colors">
+            CONTACT
+          </li>
         </NavLink>
-        {/* go to admin-doctor panel */}
+
+        {/* Admin/Doctor Login Button */}
         {!token && (
           <NavLink to={import.meta.env.VITE_ADMIN_PANEL_URL} target="_blank">
-            <button className="px-3 py-2 w-fit border border-gray-200 bg-gray-100 text-black rounded flex items-center gap-1">
+            <button className="px-3 py-2 w-fit border border-white bg-transparent text-white rounded flex items-center gap-1 hover:bg-white hover:text-[#a78bfa] transition-colors">
               <WordRotate words={["Admin", "Doctor"]} /> Login
             </button>
           </NavLink>
         )}
       </ul>
 
-      <div className="flex items-center">
-        {/* ------- profile menu --------- */}
+      {/* Auth Buttons/Profile */}
+      <div className="flex items-center mr-5">
         <div className="flex items-center gap-2">
           {token && userData ? (
             <div
               className="flex items-center gap-2 cursor-pointer relative lg:mx-12 p-1.5 select-none profile-menu-container"
               onClick={() => setShowProfileMenu(!showProfileMenu)}
             >
+              {/* ... (keep existing profile dropdown code) ... */}
               <div className="flex items-center gap-px sm:gap-1">
                 <img
                   className="size-8 sm:size-9 aspect-square object-cover rounded-[5px] border"
@@ -189,13 +195,13 @@ const Navbar = () => {
             <div className="flex items-center justify-center gap-1.5">
               <button
                 onClick={() => handleAuthNavigation("login")}
-                className="border border-gray-200 bg-gray-100 text-black px-4 py-2 rounded font-normal tracking-wide hidden sm:block active:scale-75 transition-all duration-200 ease-in-out"
+                className="border border-white bg-transparent text-white px-4 py-2 rounded font-normal tracking-wide hidden sm:block hover:bg-white hover:text-[#a78bfa] transition-colors"
               >
                 Sign In
               </button>
               <button
                 onClick={() => handleAuthNavigation("signup")}
-                className="bg-primary border border-primary text-white px-4 py-2 rounded font-normal tracking-wide hidden sm:block active:scale-75 transition-all duration-200 ease-in-out"
+                className="bg-[#fef08a] border border-[#fef08a] text-[#7c3aed] px-4 py-2 rounded font-normal tracking-wide hidden sm:block hover:bg-[#fde68a] transition-colors"
               >
                 Sign Up
               </button>
@@ -219,22 +225,21 @@ const Navbar = () => {
           <Menu
             onClick={() => setShowMenu(true)}
             size={30}
-            className="md:hidden text-primary"
+            className="md:hidden text-white ml-3"
           />
           {/* overlay */}
           {showMenu && (
             <div
-              className="fixed inset-0 bg-black/20 z-10"
+              className="fixed inset-0 bg-black/50 z-10"
               onClick={() => setShowMenu(false)}
             />
           )}
-          {/* menu */}
           <div
             className={`menu-container ${
               showMenu
-                ? "fixed w-full h-fit py-10 px-2 rounded-b-2xl flex motion-translate-x-in-[0%] motion-translate-y-in-[-10%] motion-duration-[0.53s] motion-ease-spring-snappy"
+                ? "fixed w-full h-fit py-10 px-2 rounded-b-2xl flex"
                 : "hidden"
-            } inset-0 top-0 z-20 overflow-hidden bg-white/90 backdrop-blur-xl flex-col items-center justify-center pt-5 px-2 shadow-xl`}
+            } inset-0 top-0 z-20 overflow-hidden bg-[#a78bfa] backdrop-blur-xl flex-col items-center justify-center pt-5 px-2 shadow-xl`}
           >
             {/* close icon */}
             <div className="flex w-full items-center justify-end">
